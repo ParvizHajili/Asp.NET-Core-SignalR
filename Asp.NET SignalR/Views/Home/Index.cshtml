@@ -1,0 +1,65 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <div class="container">
+        <div class="row">
+            <div class="col-4">
+                <input type="text" class="form-control" id="message" placeholder="Message" />
+                <input type="text" class="form-control" id="userName" placeholder="UserName" />
+                <button id="btnSendMessage" class="btn btn-primary" type="button">Send</button>
+            </div>
+            <div class="col-8">
+@*                <ul class="list-group" id="message"></ul>
+*@                <ul id="messages" class="list-group"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        async function start() {
+            try {
+                await connection.start();
+                console.log("SignalR Connected")
+            }
+            catch (err) {
+                console.error(err);
+                setTimeout(start, 5000);
+            }
+        }
+        connection.onclose(async () => {
+            await start();
+        });
+
+        start();
+
+        $('#btnSendMessage').click(function () {
+            try {
+                var inputUserName = $('#userName').val();
+                var inputMessage =$('#message').val();
+                connection.invoke("SendMessage", inputUserName, inputMessage);
+            }
+            catch (err) {
+                console.log(err);
+            }
+        });
+
+        $().ready(function () {
+            connection.on("ReceiveMessage", (user, message) => {
+                console.log(user, message);
+                $(`#messages`).append(
+                    `<li class="list-group-item">${user}: ${message}</li>`
+                );
+            });
+        });
+    </script>
+}
